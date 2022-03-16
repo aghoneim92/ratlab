@@ -1,0 +1,70 @@
+use crate::ast::{Expr, Op, Matrix, Stmt, Value};
+use lalrpop_util::ParseError;
+
+grammar;
+
+pub Stmt: Stmt = {
+    AssignmentStmt,
+    Expr => Stmt::ExprStmt(*<>)
+}
+
+AssignmentStmt: Stmt = {
+    <i:Ident> "=" <e:Expr> => Stmt::AssignmentStmt(i, *e)
+}
+
+Expr: Box<Expr> = {
+    Expr ExprOp Factor => Box::new(Expr::BinaryExpr(<>)),
+    Factor
+}
+
+ExprOp: Op = {
+    "+" => Op::Add,
+    "-" => Op::Sub,
+};
+
+Factor: Box<Expr> = {
+    Factor FactorOp Term => Box::new(Expr::BinaryExpr(<>)),
+    Term,
+}
+
+FactorOp: Op = {
+    "*" => Op::Mul,
+    "/" => Op::Div,
+};
+
+Mat: Matrix = {
+    "[" <NumberList> "]"
+}
+
+NumberList: Matrix = {
+    (Num ";"?)* => {
+        Matrix::from_tuples(
+            <>
+                .into_iter()
+                .map(
+                    |(num, str_)|
+                        (num, str_.map(|s| s.to_string()))
+                )
+                .collect()
+        )
+    }
+}
+
+Term: Box<Expr> = {
+    Num => Box::new(Expr::Value(Value::Number(<>))),
+    Mat => Box::new(Expr::Value(Value::Matrix(<>))),
+    Ident => Box::new(Expr::Ident(<>)),
+    "(" <Expr> ")",
+}
+
+Ident: String = {
+    r"[a-zA-Z]+[0-9a-zA-Z]*" => <>.to_string()
+}
+
+Num: f64 = {
+    r"[0-9]*(\.[0-9]+)*" =>? <>.parse().map_err(
+        |_| ParseError::User{
+            error: "Failed to parse number"
+        }
+    )
+}

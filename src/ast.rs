@@ -1,13 +1,13 @@
 #![allow(dead_code)]
 #[derive(Debug, Clone)]
 pub struct Matrix {
-    pub rows: Vec<Vec<f64>>,
+    pub rows: Vec<Vec<Box<Expr>>>,
 }
 
 impl Matrix {
-    pub fn from_tuples(tuples: Vec<(f64, Option<String>)>) -> Self {
-        let mut rows: Vec<Vec<f64>> = Vec::new();
-        let mut current_row: Vec<f64> = Vec::new();
+    pub fn from_tuples(tuples: Vec<(Box<Expr>, Option<String>)>) -> Self {
+        let mut rows: Vec<Vec<Box<Expr>>> = Vec::new();
+        let mut current_row: Vec<Box<Expr>> = Vec::new();
         for (num, semi) in tuples {
             current_row.push(num);
 
@@ -19,32 +19,6 @@ impl Matrix {
         rows.push(current_row);
 
         Self { rows }
-        // let mut data: Vec<f64> = Vec::with_capacity(tuples.len());
-        // let mut rows: usize = if tuples.len() > 0 { 1 } else { 0 };
-        // let mut columns: usize = 0;
-        // let mut column: usize = 0;
-        // for (num, semi) in tuples {
-        //     data.push(num);
-        //     column += 1;
-
-        //     if let Some(_) = semi {
-        //         if columns > 0 && column != columns {
-        //             return Err("Columns don't match".to_string());
-        //         }
-        //         columns = column;
-        //         column = 0;
-        //         rows += 1;
-        //     }
-        // }
-        // if columns > 0 && column != columns {
-        //     return Err("Columns don't match".to_string());
-        // }
-
-        // Ok(Self {
-        //     rows,
-        //     columns,
-        //     data,
-        // })
     }
 }
 
@@ -67,6 +41,7 @@ pub enum Expr {
     Value(Value),
     BinaryExpr(Box<Expr>, Op, Box<Expr>),
     Ident(String),
+    Range(f64, f64),
 }
 
 #[derive(Debug, Clone)]

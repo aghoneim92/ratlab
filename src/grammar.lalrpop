@@ -33,11 +33,11 @@ FactorOp: Op = {
 };
 
 Mat: Matrix = {
-    "[" <NumberList> "]"
+    "[" <TermList> "]"
 }
 
-NumberList: Matrix = {
-    (Num ";"?)* => {
+TermList: Matrix = {
+    (Term ";"?)* => {
         Matrix::from_tuples(
             <>
                 .into_iter()
@@ -54,7 +54,12 @@ Term: Box<Expr> = {
     Num => Box::new(Expr::Value(Value::Number(<>))),
     Mat => Box::new(Expr::Value(Value::Matrix(<>))),
     Ident => Box::new(Expr::Ident(<>)),
+    Range => Box::new(Expr::Range(<>.0, <>.1)),
     "(" <Expr> ")",
+}
+
+Range: (f64, f64) = {
+    <Num> ":" <Num>
 }
 
 Ident: String = {
@@ -62,7 +67,7 @@ Ident: String = {
 }
 
 Num: f64 = {
-    r"[0-9]*(\.[0-9]+)*" =>? <>.parse().map_err(
+    r"-?[0-9]*(\.[0-9]+)*" =>? <>.parse().map_err(
         |_| ParseError::User{
             error: "Failed to parse number"
         }

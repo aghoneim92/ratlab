@@ -12,7 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: jetli/wasm-pack-action@v0.3.0
-        run: wasm-pack build
+      - run: wasm-pack build
       - name: Build Frontend
         run: yarn build
         working-directory: ./ratlab-frontend

@@ -3,7 +3,6 @@ fn main() -> Result<(), String> {
 
     println!("{}", ratlab.input("x = -10:10")?);
     println!("{}", ratlab.input("y = [x x]")?);
-    // println!("{}", ratlab.input("x * y")?);
 
     Ok(())
 }

@@ -11,6 +11,25 @@ pub enum Variable {
     Matrix(DMatrix<f64>),
 }
 
+impl Variable {
+    pub fn pointwise_mul(&self, rhs: Variable) -> Result<Variable, String> {
+        match (self, rhs) {
+            (Variable::Number(_), Variable::Number(_)) => {
+                Err("Cannot pointwise multiply two numbers".to_string())
+            }
+            (Variable::Number(_), Variable::Matrix(_)) => {
+                Err("Cannot pointwise multiply a number by a matrix".to_string())
+            }
+            (Variable::Matrix(_), Variable::Number(_)) => {
+                Err("Cannot pointwise multiply a matrix by a number".to_string())
+            }
+            (Variable::Matrix(mat1), Variable::Matrix(mat2)) => {
+                Ok(Variable::Matrix(mat1.component_mul(&mat2)))
+            }
+        }
+    }
+}
+
 impl Display for Variable {
     fn fmt(&self, f: &mut Formatter) -> Result<(), std::fmt::Error> {
         match self {

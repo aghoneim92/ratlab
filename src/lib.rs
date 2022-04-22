@@ -21,10 +21,46 @@ extern "C" {
     fn log(input: &str);
 }
 
+struct Functions<'a> {
+    functions: HashMap<String, &'a dyn Fn(Vec<Variable>) -> Result<Variable, String>>,
+}
+
 #[wasm_bindgen]
 pub struct Ratlab {
     parser: StmtParser,
     variables: HashMap<String, Variable>,
+    functions: Functions<'static>,
+}
+
+fn zeros(variables: Vec<Variable>) -> Result<Variable, String> {
+    if variables.len() != 2 {
+        return Err("Zeros must be called with 2 variables.".into());
+    }
+
+    let rows = (&variables[0]).clone();
+    let columns = (&variables[1]).clone();
+    let rows = match rows {
+        Variable::Number(num) => {
+            if num.floor() == num {
+                num as usize
+            } else {
+                return Err("Rows cannot be a float".into());
+            }
+        }
+        Variable::Matrix(_) => return Err("Argument cannot be a matrix".into()),
+    };
+    let columns = match columns {
+        Variable::Number(num) => {
+            if num.floor() == num {
+                num as usize
+            } else {
+                return Err("Rows cannot be a float".into());
+            }
+        }
+        Variable::Matrix(_) => return Err("Argument cannot be a matrix".into()),
+    };
+
+    Ok(Variable::Matrix(DMatrix::<f64>::zeros(rows, columns)))
 }
 
 #[wasm_bindgen]
@@ -34,8 +70,18 @@ impl Ratlab {
 
         let parser = StmtParser::new();
         let variables = HashMap::new();
+        let mut functions: HashMap<String, &dyn Fn(Vec<Variable>) -> Result<Variable, String>> =
+            HashMap::new();
 
-        Self { parser, variables }
+        functions.insert("zeros".to_string(), &zeros);
+
+        let functions = Functions { functions };
+
+        Self {
+            parser,
+            variables,
+            functions,
+        }
     }
 
     fn d_matrix_from_matrix(&mut self, mat: Matrix) -> Result<DMatrix<f64>, String> {
@@ -88,6 +134,7 @@ impl Ratlab {
                     Op::Sub => lhs - rhs,
                     Op::Mul => lhs * rhs,
                     Op::Div => lhs / rhs,
+                    Op::PointwiseMul => lhs.pointwise_mul(rhs),
                 }
             }
             Expr::Ident(ident) => {
@@ -106,11 +153,39 @@ impl Ratlab {
                     .into_iter()
                     .map(|val| val as f64),
             ))),
+            Expr::Transpose(expr) => {
+                let expr = *expr;
+                let to_transpose = self.parse_expr(expr)?;
+                match to_transpose {
+                    Variable::Number(_) => Err("Cannot transpose a number".to_string()),
+                    Variable::Matrix(mat) => Ok(Variable::Matrix(mat.transpose())),
+                }
+            }
+            Expr::CallExpr(func_name, args) => {
+                let mut variables: Vec<Variable> = Vec::with_capacity(args.len());
+                for expr in args {
+                    let expr = *expr;
+                    let variable = self.parse_expr(expr)?;
+                    variables.push(variable);
+                }
+
+                self.call_func(func_name, variables)
+            }
+        }
+    }
+
+    fn call_func(&mut self, func_name: String, args: Vec<Variable>) -> Result<Variable, String> {
+        println!("keys: {:?}", self.functions.functions.keys());
+        if let Some(func) = self.functions.functions.get(&func_name) {
+            func(args)
+        } else {
+            Err(format!("{} is not defined", func_name))
         }
     }
 
     pub fn input(&mut self, input: &str) -> Result<String, String> {
         let ast = self.parser.parse(input).map_err(|err| err.to_string())?;
+        println!("ast: {:?}", ast);
 
         Ok(match ast {
             Stmt::ExprStmt(expr) => self.parse_expr(expr)?.to_string(),

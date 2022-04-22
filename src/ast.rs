@@ -27,6 +27,7 @@ pub enum Op {
     Add,
     Sub,
     Mul,
+    PointwiseMul,
     Div,
 }
 
@@ -42,6 +43,8 @@ pub enum Expr {
     BinaryExpr(Box<Expr>, Op, Box<Expr>),
     Ident(String),
     Range(f64, f64),
+    Transpose(Box<Expr>),
+    CallExpr(String, Vec<Box<Expr>>),
 }
 
 #[derive(Debug, Clone)]

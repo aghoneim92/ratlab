@@ -14,7 +14,23 @@ AssignmentStmt: Stmt = {
 
 Expr: Box<Expr> = {
     Expr ExprOp Factor => Box::new(Expr::BinaryExpr(<>)),
-    Factor
+    Factor,
+    CallExpr,
+}
+
+CallExpr: Box<Expr> = {
+    <Ident> "(" <Args> ")" => Box::new(Expr::CallExpr(<>)),
+}
+
+Args: Vec<Box<Expr>> = {
+    <mut v:(<Expr> ",")*> <e:Expr?> =>
+        match e {
+            None => v,
+            Some(expr) => {
+                v.push(expr);
+                v
+            }
+        }
 }
 
 ExprOp: Op = {
@@ -30,6 +46,7 @@ Factor: Box<Expr> = {
 FactorOp: Op = {
     "*" => Op::Mul,
     "/" => Op::Div,
+    ".*" => Op::PointwiseMul,
 };
 
 Mat: Matrix = {
@@ -55,6 +72,7 @@ Term: Box<Expr> = {
     Mat => Box::new(Expr::Value(Value::Matrix(<>))),
     Ident => Box::new(Expr::Ident(<>)),
     Range => Box::new(Expr::Range(<>.0, <>.1)),
+    <Term> "'" => Box::new(Expr::Transpose(<>)),
     "(" <Expr> ")",
 }
 

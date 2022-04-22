@@ -13,6 +13,9 @@ jobs:
       - uses: actions/checkout@v2
       - uses: jetli/wasm-pack-action@v0.3.0
       - run: wasm-pack build
+      - name: Install Frontend Dependencies
+        run: yarn install
+        working-directory: ./ratlab-frontend
       - name: Build Frontend
         run: yarn build
         working-directory: ./ratlab-frontend
